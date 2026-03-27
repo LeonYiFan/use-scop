@@ -1,0 +1,6 @@
+interface:
+  display_name: "Use scop"
+  short_description: "Single-cell analysis with scop"
+  default_prompt: "Use $use-scop to perform single-cell analysis and visualization with scop."
+policy:
+  allow_implicit_invocation: false
