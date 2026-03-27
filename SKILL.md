@@ -29,7 +29,7 @@ Use cached skill knowledge first. Check external `scop` sources only when the ta
 
 Check `scop` in this order when verification is needed:
 
-1. Local clone at `/home/new2/R/scop`
+1. A local clone of `scop` if available, for example at `~/R/scop`
 2. Installed R help for `scop`
 3. Official pkgdown docs at `https://mengxu98.github.io/scop/`
 

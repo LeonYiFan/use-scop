@@ -50,6 +50,8 @@ It is not a good fit for:
 
 ### 1. Install the skill
 
+Clone this repository into your Codex skills directory. A common location is `~/.codex/skills`:
+
 ```bash
 mkdir -p ~/.codex/skills
 cd ~/.codex/skills
@@ -73,17 +75,17 @@ pak::pak("mengxu98/scop")
 
 This skill does not strictly require a local `git clone` of `scop` in order to work.
 
-However, a local clone is recommended if you want the skill to verify version-sensitive details against local source files first. The preferred local source path is:
+However, a local clone is recommended if you want the skill to verify version-sensitive details against local source files first. One simple convention is to keep it under:
 
 ```text
-/home/new2/R/scop
+~/R/scop
 ```
 
 You can prepare it with:
 
 ```bash
-mkdir -p /home/new2/R
-cd /home/new2/R
+mkdir -p ~/R
+cd ~/R
 git clone https://github.com/mengxu98/scop.git
 ```
 
@@ -177,6 +179,8 @@ This is a community skill for Codex users. It is not an official `scop` reposito
 
 ### 安装方式
 
+将本仓库克隆到你的 Codex skills 目录中即可，常见位置是 `~/.codex/skills`：
+
 ```bash
 mkdir -p ~/.codex/skills
 cd ~/.codex/skills
@@ -198,13 +202,13 @@ pak::pak("mengxu98/scop")
 
 - 不是硬性必须
 - 但推荐这样做，因为这个 skill 在需要做版本敏感校验时，会优先查看本地 `scop` 源码
-- 推荐本地路径是 `/home/new2/R/scop`
+- 一个简单的目录约定是放在 `~/R/scop`
 
 可以这样准备：
 
 ```bash
-mkdir -p /home/new2/R
-cd /home/new2/R
+mkdir -p ~/R
+cd ~/R
 git clone https://github.com/mengxu98/scop.git
 ```
 
