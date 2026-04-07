@@ -2,19 +2,31 @@
 
 Use this file as a quick chooser before searching the full `scop` repo.
 
-Baseline: aligned to `scop` `0.8.6`.
+Baseline: aligned to `scop` `0.8.7`.
+
+## Package Check First
+
+- For execution-oriented requests, check installed-package availability before assuming runnable code
+- Prefer `requireNamespace("scop", quietly = TRUE)` as the first check
+- If installed, use `as.character(utils::packageVersion("scop"))` when version-sensitive interfaces may matter
+- If `scop` is missing, say that execution will fail until installation and provide the standard `pak::pak("mengxu98/scop")` install path
+- Use local source inspection only when the user explicitly needs implementation details or exact upstream verification
 
 ## Version-Sensitive Defaults
 
 - Write new code with `group.by`, not `group_by`
+- Use `RunDimsReduction()`, not the retired `RunDimReduction()`
 - Expect plotting defaults to use palette `"Chinese"`
 - Prefer `cores` for newer parallel interfaces such as `scVI_integrate()`, `RunNMF()`, `DynamicHeatmap()`, `FeatureHeatmap()`, `GroupHeatmap()`, and `RunDynamicEnrichment()`
 - Do not use removed example datasets `ifnb_sub`, `ref_scHCL`, or `ref_scZCL`; prefer `pancreas_sub`, `panc8_sub`, and `ref_scMCA`
+- Use `CCCStatPlot()`, `CCCHeatmap()`, and `CCCNetworkPlot()` for cell-cell communication plots; do not use removed `CellChatPlot()`
 
 ## Standard Workflow And Reduction
 
 - Build a standard Seurat-based analysis pipeline -> `standard_scop()`
-- Run a specific dimensional reduction workflow -> `RunDimReduction()`
+- Run a specific dimensional reduction workflow -> `RunDimsReduction()`
+- Estimate useful dimensions from an existing reduction -> `RunDimsEstimate()`
+- Visualize intrinsic dimensionality estimates -> `DimsEstimatePlot()`
 - Run UMAP with `scop` wrapper -> `RunUMAP2()`
 - Run PHATE -> `RunPHATE()`
 - Run TriMap -> `RunTriMap()`
@@ -65,7 +77,13 @@ Baseline: aligned to `scop` `0.8.6`.
 - Use Scanorama -> `Scanorama_integrate()`
 - Use BBKNN -> `BBKNN_integrate()`
 - Use CSS -> `CSS_integrate()`
+- Use Seurat v5 CCA integration -> `CCA_integrate()`
+- Use Seurat v5 RPCA integration -> `RPCA_integrate()`
+- Use Seurat v5 Harmony integration -> `Harmony5_integrate()`
+- Use Seurat v5 fastMNN integration -> `fastMNN5_integrate()`
+- Use Seurat v5 scVI integration -> `scVI5_integrate()`
 - Use LIGER -> `LIGER_integrate()`
+- Use Coralysis -> `Coralysis_integrate()`
 - Use Conos -> `Conos_integrate()`
 - Use ComBat -> `ComBat_integrate()`
 - Keep data uncorrected but standardized -> `Uncorrected_integrate()`
@@ -121,7 +139,12 @@ Baseline: aligned to `scop` `0.8.6`.
 ## Cell-Cell Communication
 
 - Run CellChat analysis -> `RunCellChat()`
-- Plot CellChat results -> `CellChatPlot()`
+- Run CellphoneDB analysis -> `RunCellphoneDB()`
+- Run NicheNet analysis -> `RunNichenetr()`
+- Run MultiNicheNet analysis -> `RunMultiNichenetr()`
+- Plot communication statistics and distributions -> `CCCStatPlot()`
+- Plot communication heatmaps -> `CCCHeatmap()`
+- Plot communication networks -> `CCCNetworkPlot()`
 
 ## Common Visualization
 
@@ -144,6 +167,8 @@ Baseline: aligned to `scop` `0.8.6`.
 - Prepare annotation databases -> `PrepareDB()`
 - List cached databases for one or more species -> `ListDB(species = c("Homo_sapiens", "Mus_musculus"))`
 - Prepare Python environment for `scop` methods -> `PrepareEnv(version = ...)`
+- Read `.h5ad` directly into `Seurat` -> `h5ad_to_srt()`
+- Convert an in-memory AnnData object to `Seurat` -> `adata_to_srt()`
 - Prepare files for SCExplorer -> `PrepareSCExplorer()`, `CreateDataFile()`, `CreateMetaFile()`
 - Read back SCExplorer HDF5 content -> `FetchH5()`
 - Launch SCExplorer -> `RunSCExplorer()`
@@ -151,6 +176,7 @@ Baseline: aligned to `scop` `0.8.6`.
 ## Practical Defaults
 
 - Clustering plus UMAP request -> `standard_scop()` then `CellDimPlot()`
+- Unknown useful PC count -> `RunDimsEstimate()` then `RunDimsReduction()` and optionally `DimsEstimatePlot()`
 - QC overview request -> `RunCellQC()` then `CellStatPlot()` and `CellDimPlot()`
 - QC request with ambient RNA concern -> `RunCellQC()` with `"decontX"` in `qc_metrics`, or `RunDecontX()` if the user wants the step isolated
 - Marker plus enrichment request -> `RunDEtest()` then `RunEnrichment()` and `EnrichmentPlot()`
@@ -161,3 +187,4 @@ Baseline: aligned to `scop` `0.8.6`.
 - Reference annotation request -> `RunSingleR()` or `RunCellTypist()` depending on the reference source
 - Trajectory request with velocity assays present -> `RunSCVELO()` and optionally `RunPAGA()`
 - Trajectory request focused on pseudotime trends -> `RunSlingshot()` or `RunMonocle3()` then `RunDynamicFeatures()`
+- Cell-cell communication request -> `RunCellChat()` / `RunCellphoneDB()` / `RunNichenetr()` / `RunMultiNichenetr()` then `CCCStatPlot()`, `CCCHeatmap()`, or `CCCNetworkPlot()`
