@@ -52,6 +52,8 @@ It is not a good fit for:
 
 ### 1. Install the skill
 
+Clone this repository into your Codex skills directory. A common location is `~/.codex/skills`:
+
 ```bash
 mkdir -p ~/.codex/skills
 cd ~/.codex/skills
@@ -191,6 +193,8 @@ This is a community skill for Codex users. It is not an official `scop` reposito
 - 希望避免模型生成过时写法，例如 `group_by`、`RunDimReduction()` 或旧线程参数
 
 ### 安装方式
+
+将本仓库克隆到你的 Codex skills 目录中即可，常见位置是 `~/.codex/skills`：
 
 ```bash
 mkdir -p ~/.codex/skills
