@@ -3,18 +3,20 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEFAULT_SCOP_REPO="$(cd "$ROOT_DIR/.." && pwd)/scop"
-SCOP_REPO="${SCOP_REPO:-$DEFAULT_SCOP_REPO}"
 WITH_CODEX_CLI=0
+WITH_UPSTREAM=0
 
 for arg in "$@"; do
   case "$arg" in
     --with-codex-cli)
       WITH_CODEX_CLI=1
       ;;
+    --with-upstream)
+      WITH_UPSTREAM=1
+      ;;
     *)
       echo "Unknown argument: $arg" >&2
-      echo "Usage: $0 [--with-codex-cli]" >&2
+      echo "Usage: $0 [--with-codex-cli] [--with-upstream]" >&2
       exit 2
       ;;
   esac
@@ -44,6 +46,23 @@ search_ere() {
   fi
 }
 
+reject_ere() {
+  local pattern="$1"
+  shift
+
+  if search_ere "$pattern" "$@" >/dev/null; then
+    search_ere "$pattern" "$@" >&2 || true
+    fail "unexpected pattern found: $pattern"
+  fi
+}
+
+require_ere() {
+  local pattern="$1"
+  shift
+
+  search_ere "$pattern" "$@" >/dev/null || fail "expected pattern not found: $pattern"
+}
+
 run_codex_case() {
   local name="$1"
   local prompt="$2"
@@ -53,7 +72,7 @@ run_codex_case() {
   local full_prompt
 
   output_file="$(mktemp)"
-  full_prompt="$prompt"$'\n\n'"请简短回答，不要检查仓库，不要运行命令，只根据当前 skill 规则直接回复。"
+  full_prompt="$prompt"$'\n\n'"Please answer briefly. Do not inspect the repository and do not run commands; respond only from the active skill rules."
   echo "Running Codex CLI regression: $name"
   if ! timeout 120s codex exec \
     --sandbox read-only \
@@ -85,57 +104,105 @@ run_codex_case() {
   pass "Codex CLI regression passed: $name"
 }
 
-require_cmd Rscript
-
 cd "$ROOT_DIR"
 
 [[ -f "SKILL.md" ]] || fail "SKILL.md not found"
 [[ -f "README.md" ]] || fail "README.md not found"
+[[ -f "README.zh-CN.md" ]] || fail "README.zh-CN.md not found"
+[[ -f "task_router.yaml" ]] || fail "task_router.yaml not found"
 [[ -f "agents/openai.yaml" ]] || fail "agents/openai.yaml not found"
-[[ -f "references/scop-function-map.md" ]] || fail "references/scop-function-map.md not found"
+[[ -f "TESTING.md" ]] || fail "TESTING.md not found"
+[[ -f "references/scop-function-map.md" ]] && fail "legacy references/scop-function-map.md should not exist"
 
 echo "Running static skill checks"
 
-[[ -f "$SCOP_REPO/NAMESPACE" ]] || fail "upstream scop NAMESPACE not found; set SCOP_REPO=/path/to/scop"
+require_ere '^name: use-scop$' SKILL.md
+require_ere '\$use-scop' SKILL.md README.md README.zh-CN.md agents/openai.yaml
+require_ere 'task_router\.yaml' SKILL.md README.md README.zh-CN.md agents/openai.yaml
+require_ere 'version: 0\.8\.9' task_router.yaml
+require_ere '2026-05-02' README.md README.zh-CN.md task_router.yaml
+require_ere 'requires_export_check' SKILL.md task_router.yaml
+require_ere 'scop_first_narrow_fallback' task_router.yaml
+require_ere 'allow_implicit_invocation: false' agents/openai.yaml
+pass "core metadata and routing files are present"
 
-search_ere '^export\((RunDimsReduction|RunDimsEstimate|h5ad_to_srt|RunCellphoneDB|RunNichenetr|RunMultiNichenetr|CCCStatPlot|CCCHeatmap|CCCNetworkPlot|RunGSVA|RunMetabolism|RunDecontX)\)' \
-  "$SCOP_REPO/NAMESPACE" >/dev/null || fail "expected 0.8.7 exports not found in upstream scop"
-pass "upstream scop exports include the expected 0.8.7 functions"
+reject_ere '0\.8\.7' SKILL.md README.md README.zh-CN.md task_router.yaml agents/openai.yaml TESTING.md
+reject_ere 'scop::(RunDimReduction|CellChatPlot)' SKILL.md task_router.yaml README.md README.zh-CN.md agents/openai.yaml
+pass "stale 0.8.7 baseline and old positive routes are absent"
 
-if ! Rscript -e 'quit(status = if (requireNamespace("scop", quietly = TRUE)) 0 else 1)' >/dev/null 2>&1; then
-  fail "installed R environment cannot find package 'scop'"
+require_ere 'RunDimsReduction' SKILL.md task_router.yaml
+require_ere 'CCCStatPlot|CCCHeatmap|CCCNetworkPlot' SKILL.md task_router.yaml
+require_ere 'scop::RunBulk' task_router.yaml
+require_ere 'scop::loom_to_srt' task_router.yaml
+require_ere 'scop::loom_to_adata' task_router.yaml
+require_ere 'scop::RunMilo' task_router.yaml
+require_ere 'scop::RunLIANA' task_router.yaml
+require_ere 'scop::RunDorothea' task_router.yaml
+require_ere 'scop::RunBayesSpace' task_router.yaml
+require_ere 'scop::RunscTenifoldKnk' task_router.yaml
+require_ere 'scop::GLUE_integrate' task_router.yaml
+require_ere 'scop::MultiMAP_integrate' task_router.yaml
+require_ere 'scop::WNN_integrate' task_router.yaml
+pass "current SCOP routes are represented"
+
+require_ere 'scop::ConvertHomologs' task_router.yaml
+require_ere 'scop::RunCytoSPACE' task_router.yaml
+require_ere 'scop::SpatialSpotPlot' task_router.yaml
+require_ere 'HEAD/dev APIs|development APIs|Dev-gated|dev_gated' SKILL.md README.md README.zh-CN.md task_router.yaml
+pass "development routes are export-gated"
+
+require_ere 'Codex' README.md README.zh-CN.md
+require_ere 'Claude Code' README.md README.zh-CN.md
+require_ere 'Cursor' README.md README.zh-CN.md
+require_ere 'not an official SCOP repository|不是 SCOP 官方仓库' README.md README.zh-CN.md
+pass "public README files cover installation targets and positioning"
+
+if [[ "$WITH_UPSTREAM" -eq 1 ]]; then
+  require_cmd curl
+
+  DESCRIPTION_URL="https://raw.githubusercontent.com/mengxu98/scop/HEAD/DESCRIPTION"
+  NAMESPACE_URL="https://raw.githubusercontent.com/mengxu98/scop/HEAD/NAMESPACE"
+  RELEASES_URL="https://api.github.com/repos/mengxu98/scop/releases"
+  TAGS_URL="https://api.github.com/repos/mengxu98/scop/tags"
+  DESCRIPTION_TEXT="$(curl -fsSL "$DESCRIPTION_URL")"
+  NAMESPACE_TEXT="$(curl -fsSL "$NAMESPACE_URL")"
+
+  grep -Eq 'Version:[[:space:]]+0\.8\.9' <<<"$DESCRIPTION_TEXT" || fail "upstream DESCRIPTION is not 0.8.9"
+  grep -Eq 'Date:[[:space:]]+2026-05-02' <<<"$DESCRIPTION_TEXT" || fail "upstream DESCRIPTION date mismatch"
+  for export_name in RunBulk loom_to_srt RunMilo RunLIANA RunCytoSPACE SpatialSpotPlot ConvertHomologs; do
+    grep -Eq "export\\(${export_name}\\)" <<<"$NAMESPACE_TEXT" || fail "expected upstream export not found: $export_name"
+  done
+  [[ "$(curl -fsSL "$RELEASES_URL" | tr -d '[:space:]')" == "[]" ]] || fail "GitHub releases API no longer appears empty"
+  [[ "$(curl -fsSL "$TAGS_URL" | tr -d '[:space:]')" == "[]" ]] || fail "GitHub tags API no longer appears empty"
+  pass "optional upstream checks passed"
 fi
-pass "installed R environment can load namespace 'scop'"
-
-INSTALLED_VERSION="$(Rscript -e 'cat(as.character(utils::packageVersion("scop")))' 2>/dev/null || true)"
-if [[ -z "$INSTALLED_VERSION" ]]; then
-  fail "could not determine installed scop version"
-fi
-echo "Detected installed scop version: $INSTALLED_VERSION"
-
-search_ere 'RunDimReduction|CellChatPlot|group_by|num_threads' \
-  SKILL.md README.md references/scop-function-map.md agents/openai.yaml >/dev/null || fail "expected version-guard guidance not found"
-pass "skill documents include guidance against stale interfaces"
 
 if [[ "$WITH_CODEX_CLI" -eq 1 ]]; then
   require_cmd codex
+
   run_codex_case \
-    "missing-package-guidance" \
-    '$use-scop 当前 R 环境没有安装 scop。请帮我写一段可直接运行的 scop QC + UMAP 代码。' \
-    'pak::pak\("mengxu98/scop"\)|install\.packages\("pak"\)' \
+    "qc-umap" \
+    '$use-scop Write QC, preprocessing, UMAP, clustering, and marker code for my Seurat object.' \
+    'RunCellQC|standard_scop|RunDimsReduction|CellDimPlot|FeatureDimPlot' \
+    'RunDimReduction|CellChatPlot'
+
+  run_codex_case \
+    "bulk-analysis" \
+    '$use-scop Write a pseudobulk differential expression and enrichment workflow.' \
+    'RunBulk|RunEnrichment|RunGSEA|DEtestPlot|EnrichmentPlot' \
     ''
 
   run_codex_case \
-    "dimension-selection" \
-    '$use-scop 用 scop 做降维，并自动选择合适维度。' \
-    'RunDimsReduction|RunDimsEstimate|DimsEstimatePlot' \
-    'RunDimReduction'
+    "cell-cell-communication" \
+    '$use-scop Use SCOP for CellChat or CellphoneDB communication analysis and plot results.' \
+    'RunCellChat|RunCellphoneDB|CCCStatPlot|CCCHeatmap|CCCNetworkPlot' \
+    'CellChatPlot'
 
   run_codex_case \
-    "cell-cell-communication" \
-    '$use-scop 用 scop 做细胞通讯分析并画图。' \
-    'CCCStatPlot|CCCHeatmap|CCCNetworkPlot|RunCellphoneDB|RunNichenetr|RunMultiNichenetr|RunCellChat' \
-    'CellChatPlot'
+    "dev-gated-cytospace" \
+    '$use-scop Can I use SCOP for CytoSPACE spatial spot assignment?' \
+    'RunCytoSPACE|SpatialSpotPlot|export|installed|NAMESPACE' \
+    ''
 fi
 
 pass "all requested skill tests completed"

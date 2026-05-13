@@ -1,70 +1,69 @@
 # use-scop
 
-`use-scop` is a community-maintained Codex skill for Seurat-based single-cell analysis with the `scop` R package.
+English | [中文](./README.zh-CN.md)
 
-When invoked explicitly with `$use-scop`, it guides Codex toward `scop`-first analysis code and visualizations for QC, clustering, dimensional reduction, annotation, trajectory inference, differential expression, enrichment, metabolism, cell-cell communication, SCExplorer preparation, and plotting.
+## Acknowledgements
 
-Current alignment: `scop` `0.8.7`. The skill now treats the installed `scop` package as the primary runtime source of truth, with the upstream source repo as an optional verification source.
-
-## Acknowledgements | 致谢
-
-This project exists because `scop` is an exceptional toolkit. It combines broad workflow coverage, strong Seurat compatibility, practical downstream analysis methods, and polished visualization support in a way that feels coherent and well designed. We are sincerely grateful to the author and maintainers of `scop` for building a package that is not only powerful, but genuinely useful in day-to-day single-cell analysis.
-
-本项目怀着非常真诚的敬意，向 `scop` 的作者与维护者致谢。`scop` 是一个非常出色、设计成熟的单细胞组学分析工具包：它同时具备广泛的流程覆盖、良好的 Seurat 兼容性、实用的分析功能以及丰富的可视化能力，并把这些能力组织成了统一而顺手的使用体验。这个 skill 之所以存在，正是因为 `scop` 本身值得被更多人使用、学习和推荐。
+This project exists because SCOP is an exceptional Seurat-based single-cell omics toolkit. It brings together quality control, integration, annotation, trajectory and velocity analysis, differential testing, enrichment, metabolism, communication analysis, visualization, and SCExplorer export in a coherent R package that is useful in real research workflows. We are sincerely grateful to the SCOP authors, maintainers, and community for building and sharing it.
 
 Official project:
 
-- <https://github.com/mengxu98/scop>
+https://github.com/mengxu98/scop
 
-## Overview
+Official documentation:
 
-LLMs often default to generic Seurat code even when a stronger `scop` workflow is available. The purpose of `use-scop` is to close that gap by teaching Codex to:
+https://mengxu98.github.io/scop/
 
-- prefer `scop::` functions over generic Seurat-first solutions
-- keep code aligned with a `scop` `0.8.7` baseline
-- prefer `RunDimsReduction()` over the retired `RunDimReduction()` name
-- use `scop` plotting helpers whenever direct support exists
-- modernize argument usage such as `group.by` and `cores`
-- use the new unified `CCC*Plot()` family for cell-cell communication visualization
-- fall back to Seurat or `ggplot2` only when `scop` does not provide a direct path
+## What This Skill Does
 
-## When To Use It
+`use-scop` is a thin SCOP-first skill and routing guide for AI coding or research agents that can read these rules. Its purpose is simple: when SCOP can express a Seurat-based single-cell or omics workflow through public `scop::` APIs, generated analysis code should use SCOP first.
 
-Use `use-scop` when you want Codex to work in a `scop`-first style for:
+This repository is not a SCOP tutorial collection, environment troubleshooting guide, dependency matrix, or replacement for the official SCOP documentation. For installation and package-specific runtime issues, follow the official SCOP project.
 
-- Seurat object QC and filtering
-- clustering and dimensional reduction
-- reference-based annotation and mapping
-- integration workflows
-- pseudotime, velocity, and lineage analysis
-- differential expression and enrichment
-- GSVA and metabolism scoring
-- cell-cell communication
-- `scop`-native plotting and SCExplorer preparation
+The skill contains only the rule surface needed to route work: `SKILL.md` defines the hard behavior, and `task_router.yaml` lists compact SCOP-first routes across common domains.
 
-It is not a good fit for:
+The boundary is practical rather than absolute. SCOP is built around Seurat, so if a requested step cannot be expressed through SCOP, the skill should name the unsupported step and allow only a narrow, explicit fallback to Seurat or ggplot2 for that step. It should never silently replace a SCOP-capable step with another library.
 
-- general single-cell prompts that do not explicitly request `$use-scop`
-- workflows where `scop` is not part of the target stack
-- tasks that require silent substitution of `scop` with other frameworks
+## Current Baseline
 
-## Installation
+The current public baseline is taken from official upstream GitHub metadata, not from any local installed package:
 
-### 1. Install the skill
+- `DESCRIPTION`: `scop` `0.8.9`, dated `2026-05-02`
+- `NEWS.md`: already contains `0.9.0` development notes
+- GitHub releases/tags: no packaged releases or tags are currently published
 
-Clone this repository into your Codex skills directory. A common location is `~/.codex/skills`:
+Because `NEWS.md` can lead the package version, HEAD/development APIs such as `ConvertHomologs()`, `RunCytoSPACE()`, and `SpatialSpotPlot()` are gated: generated runnable code should use them only after confirming that they are exported in the installed package or in the checked upstream `NAMESPACE`.
+
+## How To Use
+
+- **Explicit invocation:** This skill should start only when the user directly calls `$use-scop`.
+
+- **Default runtime:** Generated code should assume R with SCOP installed and Seurat objects as the primary data structure unless the user says otherwise.
+
+- **Install for Codex:** Download the skill into your local Codex skills directory.
 
 ```bash
 mkdir -p ~/.codex/skills
-cd ~/.codex/skills
-git clone https://github.com/LeonYiFan/use-scop.git
+git clone https://github.com/LeonYiFan/use-scop.git ~/.codex/skills/use-scop
 ```
 
-### 2. Install `scop` in R
+- **Use with Claude Code:** Download this skill into the local Claude Code skills directory.
 
-To run the analysis code generated by this skill, you should install the `scop` R package in your R environment.
+```bash
+mkdir -p ~/.claude/skills
+git clone https://github.com/LeonYiFan/use-scop.git ~/.claude/skills/use-scop
+```
 
-According to the current upstream package metadata, `scop` `0.8.7` requires `R >= 4.1.0` and is typically installed from GitHub with `pak`.
+- **Use with Cursor:** Download this skill into the local Cursor skills directory.
+
+```bash
+mkdir -p ~/.cursor/skills
+git clone https://github.com/LeonYiFan/use-scop.git ~/.cursor/skills/use-scop
+```
+
+- **Chat-based agents without a skill system:** Paste or attach `SKILL.md` and `task_router.yaml` as context, then start the request with `$use-scop`.
+
+- **SCOP package installation:** To run generated code, install SCOP in the target R environment.
 
 ```r
 if (!require("pak", quietly = TRUE)) {
@@ -73,193 +72,22 @@ if (!require("pak", quietly = TRUE)) {
 pak::pak("mengxu98/scop")
 ```
 
-### 3. Optional: clone the upstream `scop` repository locally
+- **SCOP source repository:** You do not need to clone the SCOP source repository to use this skill. The skill only needs the AI tool to read `SKILL.md` and `task_router.yaml`; the R environment that runs generated analysis code should already provide `scop`.
 
-This skill does not require a local `git clone` of `scop` in order to work.
-
-You only need a local clone if you want source-level inspection, local development against `scop`, or exact upstream code verification.
-
-For ordinary use, the installed package plus R help is the preferred dependency model. If you still want a local clone, you can prepare it with:
+- **Recommended local SCOP source:** For best results, especially when your AI tool can inspect local source code, it is useful to also keep the SCOP source repository locally.
 
 ```bash
-cd /path/to/workdir
-git clone https://github.com/mengxu98/scop.git
+mkdir -p ~/src
+git clone https://github.com/mengxu98/scop.git ~/src/scop
 ```
 
-If a local clone is not available, the skill relies on:
+- **Example prompts:**
 
-- the installed `scop` package
-- installed R help for `scop`
-- the official `scop` documentation site
-
-### 4. Environment expectations
-
-This repository contains skill rules only. To run generated code, you need R, an installed `scop` package, and a Seurat-based workflow or object.
-
-Recommended lightweight checks:
-
-```r
-requireNamespace("scop", quietly = TRUE)
-as.character(utils::packageVersion("scop"))
-```
-
-## Usage
-
-Start your prompt with:
-
-```text
-$use-scop
-```
-
-Example prompts:
-
-```text
-$use-scop Run QC, clustering, UMAP, and marker detection on this Seurat object.
-```
-
-```text
-$use-scop Rewrite this Seurat pipeline so it uses scop-native annotation, enrichment, and plotting functions.
-```
-
-```text
-$use-scop Use scop to run Monocle3 pseudotime analysis and visualize dynamic features.
-```
-
-## Repository Layout
-
-```text
-.
-|-- README.md
-|-- SKILL.md
-|-- agents/
-|   `-- openai.yaml
-`-- references/
-    `-- scop-function-map.md
-```
-
-- `SKILL.md`: core behavior, invocation rules, and version-aware guidance
-- `agents/openai.yaml`: display metadata and explicit invocation policy
-- `references/scop-function-map.md`: task-to-function mapping for common `scop` workflows
-
-## Version Baseline
-
-This skill is aligned to `scop` `0.8.7`. Key assumptions:
-
-- write `group.by`, not `group_by`
-- write `RunDimsReduction()`, not the older `RunDimReduction()`
-- prefer `cores` for newer parallelized interfaces
-- expect plotting defaults to use palette `"Chinese"`
-- avoid removed example datasets such as `ifnb_sub`, `ref_scHCL`, and `ref_scZCL`
-- prefer `CCCStatPlot()`, `CCCHeatmap()`, and `CCCNetworkPlot()` over removed `CellChatPlot()`
-- prefer installed-package checks such as `requireNamespace("scop", quietly = TRUE)` and `packageVersion("scop")` before relying on optional source inspection
-
-## Decision Order
-
-Unless the user explicitly asks for source inspection first, the intended decision order is:
-
-1. Decide whether the request is execution-oriented.
-2. If yes, check whether installed `scop` is available.
-3. Check installed version only when compatibility may matter.
-4. Draft from the bundled skill mapping first.
-5. Use installed R help for argument verification when needed.
-6. Use pkgdown docs only if installed help is not enough.
-7. Use source inspection only as the last verification layer.
-
-## Runtime Detection
-
-For execution-oriented requests:
-
-- check installed `scop` before assuming runnable code
-- check installed version only when compatibility may matter
-- if `scop` is missing, give the install command first
-- use source inspection only when explicitly needed
+  - `$use-scop write a QC, preprocessing, UMAP, clustering, and marker workflow for my Seurat object.`
+  - `$use-scop convert this Seurat-only pipeline into SCOP-first code with explicit fallback only where SCOP has no route.`
+  - `$use-scop use SCOP for CellChat or CellphoneDB communication analysis and plot the results with CCC plots.`
+  - `$use-scop tell me whether this spatial CytoSPACE workflow is available in my installed SCOP version.`
 
 ## Project Positioning
 
-This is a community skill for Codex users. It is not an official `scop` repository and is not affiliated with the upstream `scop` project.
-
----
-
-## 中文说明
-
-`use-scop` 是一个非官方的 Codex skill，用来在用户显式输入 `$use-scop` 时，让 Codex 优先按照 `scop` 的思路完成单细胞分析与可视化，而不是直接退回到通用的 Seurat 写法。
-
-当前对接版本为 `scop` `0.8.7`，并优先依赖已安装的 `scop` 包，而不是固定依赖本地源码路径。
-
-### 适用场景
-
-- 希望把 Seurat 对象分析改写为 `scop`-first 工作流
-- 希望在 QC、聚类、降维、注释、轨迹、差异分析、富集分析、代谢分析、细胞通讯和绘图中优先使用 `scop`
-- 希望避免模型生成过时写法，例如 `group_by`、`RunDimReduction()` 或旧线程参数
-
-### 安装方式
-
-将本仓库克隆到你的 Codex skills 目录中即可，常见位置是 `~/.codex/skills`：
-
-```bash
-mkdir -p ~/.codex/skills
-cd ~/.codex/skills
-git clone https://github.com/LeonYiFan/use-scop.git
-```
-
-### 运行依赖
-
-如果你希望真正运行这个 skill 生成出来的 R 分析代码，那么需要先在你的 R 环境里安装 `scop` 包。
-
-```r
-if (!require("pak", quietly = TRUE)) {
-  install.packages("pak")
-}
-pak::pak("mengxu98/scop")
-```
-
-推荐先做轻量检查：
-
-```r
-requireNamespace("scop", quietly = TRUE)
-as.character(utils::packageVersion("scop"))
-```
-
-是否必须额外 `git clone` 官方 `scop` 仓库？
-
-- 不是硬性必须
-- 常规使用时，优先依赖已安装的 `scop` 包和本地 R help
-- 只有在需要源码核对或参与开发时，才建议额外 clone 仓库
-
-如需 clone：
-
-```bash
-cd /path/to/workdir
-git clone https://github.com/mengxu98/scop.git
-```
-
-如果没有本地 clone，这个 skill 会优先检查已安装的 `scop`，然后使用本地 R help 文档或官方文档站点。
-
-### 运行时检测
-
-对于执行型请求：
-
-- 先检查 `scop` 是否已安装
-- 只有兼容性相关时才检查版本
-- 若未安装，先提示安装
-- 除非明确需要，否则不要优先看源码
-
-### 使用方式
-
-在提示词开头明确写上：
-
-```text
-$use-scop
-```
-
-例如：
-
-```text
-$use-scop 请把这个 Seurat 单细胞分析流程改写成 scop 风格，并补上 QC、注释和富集分析代码。
-```
-
-### 致谢
-
-本项目的灵感与能力边界都直接受益于 `scop`。感谢 `scop` 作者和维护者做出的高质量工作，也感谢官方项目仓库：
-
-- <https://github.com/mengxu98/scop>
+This is a community-maintained skill for AI coding and research agents. It is not an official SCOP repository and is not affiliated with the upstream SCOP project.

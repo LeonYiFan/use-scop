@@ -1,6 +1,6 @@
 # Testing
 
-Use this file to regression-test the `use-scop` skill after updating `SKILL.md`, `README.md`, `agents/openai.yaml`, or `references/scop-function-map.md`.
+Use this file to regression-test the `use-scop` skill after updating `SKILL.md`, `README.md`, `README.zh-CN.md`, `task_router.yaml`, `agents/openai.yaml`, or `scripts/test-skill.sh`.
 
 Recommended entry point:
 
@@ -8,120 +8,120 @@ Recommended entry point:
 bash scripts/test-skill.sh
 ```
 
-To also run non-interactive Codex CLI regressions:
+Optional upstream verification against official GitHub metadata:
+
+```bash
+bash scripts/test-skill.sh --with-upstream
+```
+
+Optional non-interactive Codex CLI prompt regressions:
 
 ```bash
 bash scripts/test-skill.sh --with-codex-cli
 ```
 
+Both options can be combined.
+
+```bash
+bash scripts/test-skill.sh --with-upstream --with-codex-cli
+```
+
 ## Quick Checks
 
-Verify that key `0.8.7` functions still exist in upstream `scop`:
+The default test suite is static and portable. It does not require:
 
-```bash
-SCOP_REPO=/path/to/scop
-rg -n '^export\((RunDimsReduction|RunDimsEstimate|h5ad_to_srt|RunCellphoneDB|RunNichenetr|RunMultiNichenetr|CCCStatPlot|CCCHeatmap|CCCNetworkPlot|RunGSVA|RunMetabolism|RunDecontX)\)' "$SCOP_REPO/NAMESPACE"
-```
+- a local SCOP source checkout
+- an installed R package named `scop`
+- a local R installation
 
-Verify that the local R environment can see `scop`:
+It verifies that:
 
-```bash
-Rscript -e 'cat(requireNamespace("scop", quietly = TRUE))'
-Rscript -e 'if (requireNamespace("scop", quietly = TRUE)) cat(as.character(utils::packageVersion("scop")))'
-```
+- `SKILL.md`, `README.md`, `README.zh-CN.md`, `task_router.yaml`, and `agents/openai.yaml` exist
+- `SKILL.md` and agent metadata require explicit `$use-scop` invocation
+- the skill routes through root-level `task_router.yaml`
+- the public baseline is official upstream SCOP `0.8.9` dated `2026-05-02`
+- old positive routes for the removed dimensional-reduction and CellChat plotting APIs are absent
+- current routes such as `RunBulk()`, `loom_to_srt()`, `RunMilo()`, `RunLIANA()`, `RunDorothea()`, `RunBayesSpace()`, `RunscTenifoldKnk()`, `GLUE_integrate()`, `MultiMAP_integrate()`, and `WNN_integrate()` are present
+- development routes such as `ConvertHomologs()`, `RunCytoSPACE()`, and `SpatialSpotPlot()` are marked as export-gated
 
-Verify that the skill only mentions old interfaces as things to avoid:
+## Optional Upstream Checks
 
-```bash
-rg -n 'RunDimReduction|CellChatPlot|group_by|num_threads' SKILL.md README.md references/scop-function-map.md agents/openai.yaml
-```
+`--with-upstream` uses official GitHub URLs and confirms:
 
-Expected result:
+- `DESCRIPTION` reports `Version: 0.8.9`
+- `DESCRIPTION` reports `Date: 2026-05-02`
+- `NAMESPACE` exports selected current and development-gated functions
+- the GitHub releases and tags APIs currently return no packaged releases or tags
 
-- `RunDimsReduction`, `RunDimsEstimate`, `RunCellphoneDB`, `RunNichenetr`, `RunMultiNichenetr`, and `CCC*Plot` are exported by upstream `scop`
-- `requireNamespace("scop", quietly = TRUE)` returns `TRUE`
-- `packageVersion("scop")` matches the intended baseline or is explicitly noted
-- old names appear only in "do not use" guidance
+This check intentionally does not inspect `/home/new2/scop` or any installed package, because the published skill should not depend on one user's local source tree.
 
 ## Manual Prompt Tests
 
 Run these prompts in Codex and compare the response against the expected behavior.
 
-### 1. Runnable workflow
+### 1. QC And UMAP
 
 Prompt:
 
 ```text
-$use-scop 帮我写一段可直接运行的 scop QC + UMAP 代码
+$use-scop Write QC, preprocessing, UMAP, clustering, and marker code for my Seurat object.
 ```
 
 Expected:
 
-- checks or states installed-package status first
-- prefers `RunCellQC()`, `standard_scop()`, `CellDimPlot()`
+- reads or follows `task_router.yaml`
+- prefers `RunCellQC()`, `standard_scop()`, `RunDimsReduction()`, `CellDimPlot()`, and `DEtestPlot()` or marker-related SCOP routes
 - does not jump straight to pure Seurat code
 
-### 2. Dimension selection
+### 2. Bulk Analysis
 
 Prompt:
 
 ```text
-$use-scop 用 scop 做降维，并自动选择合适维度
+$use-scop Write a pseudobulk differential expression and enrichment workflow.
 ```
 
 Expected:
 
-- uses `RunDimsReduction()`
-- may mention `RunDimsEstimate()` or `DimsEstimatePlot()`
-- does not use `RunDimReduction()`
+- prefers `RunBulk()`
+- connects bulk results to `DEtestPlot()`, `RunEnrichment()`, `RunGSEA()`, `EnrichmentPlot()`, or `GSEAPlot()`
+- keeps fallback explicit if a requested bulk substep lacks a SCOP route
 
-### 3. Cell-cell communication
+### 3. Cell-Cell Communication
 
 Prompt:
 
 ```text
-$use-scop 用 scop 做细胞通讯分析并画图
+$use-scop Use SCOP for CellChat or CellphoneDB communication analysis and plot results.
 ```
 
 Expected:
 
-- prefers `RunCellChat()`, `RunCellphoneDB()`, `RunNichenetr()`, or `RunMultiNichenetr()`
+- uses `RunCellChat()` or `RunCellphoneDB()`
 - uses `CCCStatPlot()`, `CCCHeatmap()`, or `CCCNetworkPlot()`
-- does not use `CellChatPlot()`
+- does not use removed `CellChatPlot()`
 
-### 4. Package-missing behavior
-
-Prompt:
-
-```text
-$use-scop 帮我调试这段 scop 代码为什么跑不起来
-```
-
-Expected:
-
-- treats this as execution-oriented
-- checks installed `scop` before assuming runnable code
-- if missing, gives install guidance before package-specific debugging
-
-### 5. Non-execution request
+### 4. Development-Gated Spatial Route
 
 Prompt:
 
 ```text
-$use-scop 解释一下 scop 和 Seurat 的关系
+$use-scop Can I use SCOP for CytoSPACE spatial spot assignment?
 ```
 
 Expected:
 
-- explains in `scop` terms
-- does not overemphasize installation checks because the request is conceptual
+- mentions `RunCytoSPACE()` and `SpatialSpotPlot()`
+- says these are HEAD/development-gated routes
+- checks installed exports or upstream `NAMESPACE` before writing runnable code
 
 ## Pass Criteria
 
 The skill is in good shape when:
 
 - it only activates under explicit `$use-scop`
-- it prefers installed-package checks over source inspection
-- it uses current `0.8.7` interfaces
-- it avoids outdated names except in "avoid this" guidance
-- it falls back to Seurat or `ggplot2` only when `scop` lacks direct support
+- it routes through `task_router.yaml`
+- it uses official SCOP `0.8.9` as the public baseline
+- it gates HEAD/development APIs by export checks
+- it avoids old positive routes
+- it allows only explicit, narrow fallback to Seurat or ggplot2 for steps SCOP cannot express
