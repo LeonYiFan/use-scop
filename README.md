@@ -36,32 +36,43 @@ Because `NEWS.md` can lead the package version, HEAD/development APIs such as `C
 
 ## How To Use
 
-- **Explicit invocation:** This skill should start only when the user directly calls `$use-scop`.
+- **Explicit invocation:** This skill should start only when the user directly calls `$use-scop`, `/use-scop`, or clearly asks to use the `use-scop` skill.
 
 - **Default runtime:** Generated code should assume R with SCOP installed and Seurat objects as the primary data structure unless the user says otherwise.
 
-- **Install for Codex:** Download the skill into your local Codex skills directory.
+- **Install for Codex:** Download the skill into your user-level Codex skills directory.
 
 ```bash
 mkdir -p ~/.codex/skills
 git clone https://github.com/LeonYiFan/use-scop.git ~/.codex/skills/use-scop
 ```
 
-- **Use with Claude Code:** Download this skill into the local Claude Code skills directory.
+- **Install for Claude Code:** Download this skill into your user-level Claude Code skills directory.
 
 ```bash
 mkdir -p ~/.claude/skills
 git clone https://github.com/LeonYiFan/use-scop.git ~/.claude/skills/use-scop
 ```
 
-- **Use with Cursor:** Download this skill into the local Cursor skills directory.
+- **Install for Cursor:** Download this skill into your user-level Cursor skills directory.
 
 ```bash
 mkdir -p ~/.cursor/skills
 git clone https://github.com/LeonYiFan/use-scop.git ~/.cursor/skills/use-scop
 ```
 
-- **Chat-based agents without a skill system:** Paste or attach `SKILL.md` and `task_router.yaml` as context, then start the request with `$use-scop`.
+- **Project-level installs:** For a repository-local skill, put the same folder at `.claude/skills/use-scop` or `.cursor/skills/use-scop` in the project root.
+
+- **Cursor managed skills:** Do not install this skill into `~/.cursor/skills-cursor`; that directory is reserved for Cursor-managed built-in skills.
+
+- **Install helper:** From this repository, you can sync the current checkout to Codex, Claude Code, and Cursor user-level skill directories.
+
+```bash
+bash scripts/install-user-skill.sh --dry-run
+bash scripts/install-user-skill.sh
+```
+
+- **Chat-based agents without a skill system:** Paste or attach `SKILL.md` and `task_router.yaml` as context, then start the request with `$use-scop` or `/use-scop`.
 
 - **SCOP package installation:** To run generated code, install SCOP in the target R environment.
 
@@ -84,6 +95,7 @@ git clone https://github.com/mengxu98/scop.git ~/src/scop
 - **Example prompts:**
 
   - `$use-scop write a QC, preprocessing, UMAP, clustering, and marker workflow for my Seurat object.`
+  - `/use-scop write a QC, preprocessing, UMAP, clustering, and marker workflow for my Seurat object.`
   - `$use-scop convert this Seurat-only pipeline into SCOP-first code with explicit fallback only where SCOP has no route.`
   - `$use-scop use SCOP for CellChat or CellphoneDB communication analysis and plot the results with CCC plots.`
   - `$use-scop tell me whether this spatial CytoSPACE workflow is available in my installed SCOP version.`

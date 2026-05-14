@@ -36,32 +36,43 @@ https://mengxu98.github.io/scop/
 
 ## 如何使用
 
-- **显式调用：** 这个 skill 只应在用户直接写出 `$use-scop` 时启动。
+- **显式调用：** 这个 skill 只应在用户直接写出 `$use-scop`、`/use-scop`，或明确要求使用 `use-scop` skill 时启动。
 
 - **默认运行环境：** 默认生成 R 代码，并假设目标环境已经安装 SCOP；默认数据结构是 Seurat 对象，除非用户明确说明其他格式。
 
-- **在 Codex 中安装：** 可以把这个 skill 下载到本地 Codex skills 目录。
+- **在 Codex 中安装：** 可以把这个 skill 下载到用户级 Codex skills 目录。
 
 ```bash
 mkdir -p ~/.codex/skills
 git clone https://github.com/LeonYiFan/use-scop.git ~/.codex/skills/use-scop
 ```
 
-- **在 Claude Code 中使用：** 可以把这个 skill 下载到 Claude Code 的本地 skills 目录。
+- **在 Claude Code 中安装：** 可以把这个 skill 下载到用户级 Claude Code skills 目录。
 
 ```bash
 mkdir -p ~/.claude/skills
 git clone https://github.com/LeonYiFan/use-scop.git ~/.claude/skills/use-scop
 ```
 
-- **在 Cursor 中使用：** 可以把这个 skill 下载到 Cursor 的本地 skills 目录。
+- **在 Cursor 中安装：** 可以把这个 skill 下载到用户级 Cursor skills 目录。
 
 ```bash
 mkdir -p ~/.cursor/skills
 git clone https://github.com/LeonYiFan/use-scop.git ~/.cursor/skills/use-scop
 ```
 
-- **没有 skill 系统的对话式助手：** 把 `SKILL.md` 和 `task_router.yaml` 作为上下文粘贴或上传，然后用 `$use-scop` 开始请求。
+- **项目级安装：** 如果希望某个项目单独携带这个 skill，可以把同一份目录放到项目根目录的 `.claude/skills/use-scop` 或 `.cursor/skills/use-scop`。
+
+- **Cursor 托管目录：** 不要把这个 skill 安装到 `~/.cursor/skills-cursor`；这个目录保留给 Cursor 托管的内置 skills。
+
+- **安装辅助脚本：** 在这个仓库中，可以把当前 checkout 同步到 Codex、Claude Code、Cursor 的用户级 skills 目录。
+
+```bash
+bash scripts/install-user-skill.sh --dry-run
+bash scripts/install-user-skill.sh
+```
+
+- **没有 skill 系统的对话式助手：** 把 `SKILL.md` 和 `task_router.yaml` 作为上下文粘贴或上传，然后用 `$use-scop` 或 `/use-scop` 开始请求。
 
 - **安装 SCOP 包：** 如果要真正运行生成出来的代码，需要在目标 R 环境中安装 SCOP。
 
@@ -84,6 +95,7 @@ git clone https://github.com/mengxu98/scop.git ~/src/scop
 - **示例 prompt：**
 
   - `$use-scop write a QC, preprocessing, UMAP, clustering, and marker workflow for my Seurat object.`
+  - `/use-scop write a QC, preprocessing, UMAP, clustering, and marker workflow for my Seurat object.`
   - `$use-scop convert this Seurat-only pipeline into SCOP-first code with explicit fallback only where SCOP has no route.`
   - `$use-scop use SCOP for CellChat or CellphoneDB communication analysis and plot the results with CCC plots.`
   - `$use-scop tell me whether this spatial CytoSPACE workflow is available in my installed SCOP version.`

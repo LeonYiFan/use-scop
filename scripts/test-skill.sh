@@ -63,6 +63,48 @@ require_ere() {
   search_ere "$pattern" "$@" >/dev/null || fail "expected pattern not found: $pattern"
 }
 
+validate_skill_frontmatter() {
+  python3 - <<'PY'
+from pathlib import Path
+import sys
+
+try:
+    import yaml
+except Exception as exc:
+    print(f"PyYAML is required to validate SKILL.md frontmatter: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+text = Path("SKILL.md").read_text(encoding="utf-8")
+if not text.startswith("---\n"):
+    print("SKILL.md must start with YAML frontmatter", file=sys.stderr)
+    sys.exit(1)
+
+try:
+    frontmatter = text.split("---", 2)[1]
+    data = yaml.safe_load(frontmatter)
+except Exception as exc:
+    print(f"SKILL.md frontmatter is not valid YAML: {exc}", file=sys.stderr)
+    sys.exit(1)
+
+if data.get("name") != "use-scop":
+    print("SKILL.md frontmatter name must be use-scop", file=sys.stderr)
+    sys.exit(1)
+
+description = data.get("description")
+if not isinstance(description, str) or not description.strip():
+    print("SKILL.md frontmatter description must be a non-empty string", file=sys.stderr)
+    sys.exit(1)
+
+if len(description) > 1024:
+    print("SKILL.md frontmatter description must be at most 1024 characters", file=sys.stderr)
+    sys.exit(1)
+
+if data.get("disable-model-invocation") is not True:
+    print("SKILL.md must set disable-model-invocation: true", file=sys.stderr)
+    sys.exit(1)
+PY
+}
+
 run_codex_case() {
   local name="$1"
   local prompt="$2"
@@ -112,18 +154,24 @@ cd "$ROOT_DIR"
 [[ -f "task_router.yaml" ]] || fail "task_router.yaml not found"
 [[ -f "agents/openai.yaml" ]] || fail "agents/openai.yaml not found"
 [[ -f "TESTING.md" ]] || fail "TESTING.md not found"
+[[ -x "scripts/install-user-skill.sh" ]] || fail "scripts/install-user-skill.sh not found or not executable"
 [[ -f "references/scop-function-map.md" ]] && fail "legacy references/scop-function-map.md should not exist"
 
 echo "Running static skill checks"
 
+validate_skill_frontmatter
+pass "SKILL.md frontmatter is valid YAML"
+
 require_ere '^name: use-scop$' SKILL.md
 require_ere '\$use-scop' SKILL.md README.md README.zh-CN.md agents/openai.yaml
+require_ere '/use-scop' SKILL.md README.md README.zh-CN.md
 require_ere 'task_router\.yaml' SKILL.md README.md README.zh-CN.md agents/openai.yaml
 require_ere 'version: 0\.8\.9' task_router.yaml
 require_ere '2026-05-02' README.md README.zh-CN.md task_router.yaml
 require_ere 'requires_export_check' SKILL.md task_router.yaml
 require_ere 'scop_first_narrow_fallback' task_router.yaml
-require_ere 'allow_implicit_invocation: false' agents/openai.yaml
+require_ere 'disable-model-invocation: true' SKILL.md
+require_ere 'allow_implicit_invocation: true' agents/openai.yaml
 pass "core metadata and routing files are present"
 
 reject_ere '0\.8\.7' SKILL.md README.md README.zh-CN.md task_router.yaml agents/openai.yaml TESTING.md
@@ -154,6 +202,14 @@ pass "development routes are export-gated"
 require_ere 'Codex' README.md README.zh-CN.md
 require_ere 'Claude Code' README.md README.zh-CN.md
 require_ere 'Cursor' README.md README.zh-CN.md
+require_ere 'install-user-skill\.sh' README.md README.zh-CN.md TESTING.md
+require_ere '~/.codex/skills/use-scop' README.md README.zh-CN.md
+require_ere '~/.claude/skills/use-scop' README.md README.zh-CN.md
+require_ere '~/.cursor/skills/use-scop' README.md README.zh-CN.md
+require_ere '\.claude/skills/use-scop' README.md README.zh-CN.md
+require_ere '\.cursor/skills/use-scop' README.md README.zh-CN.md
+require_ere 'Do not install.*~/.cursor/skills-cursor|不要把.*~/.cursor/skills-cursor' README.md README.zh-CN.md
+reject_ere 'git clone .*~/.cursor/skills-cursor|mkdir -p ~/.cursor/skills-cursor' README.md README.zh-CN.md
 require_ere 'not an official SCOP repository|不是 SCOP 官方仓库' README.md README.zh-CN.md
 pass "public README files cover installation targets and positioning"
 

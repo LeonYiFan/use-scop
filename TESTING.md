@@ -1,6 +1,6 @@
 # Testing
 
-Use this file to regression-test the `use-scop` skill after updating `SKILL.md`, `README.md`, `README.zh-CN.md`, `task_router.yaml`, `agents/openai.yaml`, or `scripts/test-skill.sh`.
+Use this file to regression-test the `use-scop` skill after updating `SKILL.md`, `README.md`, `README.zh-CN.md`, `task_router.yaml`, `agents/openai.yaml`, `scripts/test-skill.sh`, or `scripts/install-user-skill.sh`.
 
 Recommended entry point:
 
@@ -28,7 +28,7 @@ bash scripts/test-skill.sh --with-upstream --with-codex-cli
 
 ## Quick Checks
 
-The default test suite is static and portable. It does not require:
+The default test suite is static. It requires `python3` with `PyYAML` to verify that `SKILL.md` frontmatter is strict YAML. It does not require:
 
 - a local SCOP source checkout
 - an installed R package named `scop`
@@ -36,10 +36,13 @@ The default test suite is static and portable. It does not require:
 
 It verifies that:
 
-- `SKILL.md`, `README.md`, `README.zh-CN.md`, `task_router.yaml`, and `agents/openai.yaml` exist
-- `SKILL.md` and agent metadata require explicit `$use-scop` invocation
+- `SKILL.md`, `README.md`, `README.zh-CN.md`, `task_router.yaml`, `agents/openai.yaml`, and `scripts/install-user-skill.sh` exist
+- `SKILL.md` frontmatter is valid YAML, has a string description, and sets `disable-model-invocation: true`
+- `SKILL.md` and agent metadata support explicit `$use-scop` and `/use-scop` invocation
 - the skill routes through root-level `task_router.yaml`
 - the public baseline is official upstream SCOP `0.8.9` dated `2026-05-02`
+- the README files document Codex, Claude Code, and Cursor user-level and project-level install paths
+- the README files warn not to install into Cursor's managed `~/.cursor/skills-cursor` directory
 - old positive routes for the removed dimensional-reduction and CellChat plotting APIs are absent
 - current routes such as `RunBulk()`, `loom_to_srt()`, `RunMilo()`, `RunLIANA()`, `RunDorothea()`, `RunBayesSpace()`, `RunscTenifoldKnk()`, `GLUE_integrate()`, `MultiMAP_integrate()`, and `WNN_integrate()` are present
 - development routes such as `ConvertHomologs()`, `RunCytoSPACE()`, and `SpatialSpotPlot()` are marked as export-gated
@@ -57,7 +60,7 @@ This check intentionally does not inspect `/home/new2/scop` or any installed pac
 
 ## Manual Prompt Tests
 
-Run these prompts in Codex and compare the response against the expected behavior.
+Run these prompts in Codex with `$use-scop`, or in Claude Code/Cursor with `/use-scop`, and compare the response against the expected behavior.
 
 ### 1. QC And UMAP
 
@@ -119,9 +122,20 @@ Expected:
 
 The skill is in good shape when:
 
-- it only activates under explicit `$use-scop`
+- it only activates under explicit `$use-scop`, `/use-scop`, or a clear request to use `use-scop`
+- it remains visible to Codex/OpenAI while preserving explicit invocation for Claude Code/Cursor
 - it routes through `task_router.yaml`
 - it uses official SCOP `0.8.9` as the public baseline
 - it gates HEAD/development APIs by export checks
 - it avoids old positive routes
 - it allows only explicit, narrow fallback to Seurat or ggplot2 for steps SCOP cannot express
+
+## Install Script Checks
+
+The install helper should be safe to inspect before it writes anything.
+
+```bash
+bash scripts/install-user-skill.sh --dry-run
+bash scripts/install-user-skill.sh --codex --dry-run
+bash scripts/install-user-skill.sh --claude --cursor --dry-run
+```

@@ -1,6 +1,7 @@
 interface:
   display_name: "Use SCOP"
   short_description: "SCOP-first Seurat analysis"
-  default_prompt: "Use $use-scop to perform Seurat-based single-cell analysis with SCOP. Read task_router.yaml first, prefer public scop:: routes, use the official 0.8.9 baseline, gate HEAD/dev APIs by export checks, and allow only explicit narrow fallback to Seurat or ggplot2 when SCOP has no direct route."
+  default_prompt: "Use $use-scop for SCOP-first Seurat analysis. Read task_router.yaml and prefer public scop:: routes."
 policy:
-  allow_implicit_invocation: false
+  # Keep this visible to Codex; SKILL.md still requires explicit $use-scop use.
+  allow_implicit_invocation: true

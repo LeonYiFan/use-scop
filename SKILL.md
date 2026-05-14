@@ -1,13 +1,14 @@
 ---
 name: use-scop
-description: Use only when the user explicitly invokes $use-scop for Seurat-based single-cell or omics analysis with the scop R package; prefer scop:: routes and scop-native plots, use the official upstream 0.8.9 baseline with HEAD/dev APIs gated by export checks, and allow only explicit narrow fallback to Seurat or ggplot2 when scop has no direct route.
+description: "Use only when the user explicitly invokes $use-scop for Seurat-based single-cell or omics analysis with the scop R package; prefer scop:: routes and scop-native plots, use the official upstream 0.8.9 baseline with HEAD/dev APIs gated by export checks, and allow only explicit narrow fallback to Seurat or ggplot2 when scop has no direct route."
+disable-model-invocation: true
 ---
 
 # Use SCOP
 
-Use this skill only when the user explicitly calls `$use-scop`.
+Use this skill only when the user explicitly calls `$use-scop`, `/use-scop`, or clearly asks to use the `use-scop` skill.
 
-Do not apply this skill implicitly to ordinary single-cell or omics requests that do not name `$use-scop`.
+Do not apply this skill implicitly to ordinary single-cell or omics requests that do not name `$use-scop`, `/use-scop`, or the `use-scop` skill.
 
 ## Hard Rules
 
