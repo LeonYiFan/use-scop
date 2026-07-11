@@ -28,11 +28,11 @@ The boundary is practical rather than absolute. SCOP is built around Seurat, so 
 
 The current public baseline is taken from official upstream GitHub metadata, not from any local installed package:
 
-- `DESCRIPTION`: `scop` `0.8.9`, dated `2026-05-02`
+- `DESCRIPTION`: `scop` `0.8.9`, dated `2026-06-28`
 - `NEWS.md`: already contains `0.9.0` development notes
 - GitHub releases/tags: no packaged releases or tags are currently published
 
-Because `NEWS.md` can lead the package version, HEAD/development APIs such as `ConvertHomologs()`, `RunCytoSPACE()`, and `SpatialSpotPlot()` are gated: generated runnable code should use them only after confirming that they are exported in the installed package or in the checked upstream `NAMESPACE`.
+The route map is synchronized to upstream `main` commit `32cb4855`. Because `NEWS.md` can lead `DESCRIPTION`, generated runnable code should confirm selected exports in the installed package whenever its source or version differs from that snapshot. The test suite validates every namespaced route against upstream `NAMESPACE` by default.
 
 ## How To Use
 
