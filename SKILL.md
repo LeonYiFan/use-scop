@@ -1,7 +1,6 @@
 ---
 name: use-scop
-description: "Use only when the user explicitly invokes $use-scop for Seurat-based single-cell or omics analysis with the scop R package; prefer scop:: routes and scop-native plots, use the official upstream 0.8.9 baseline with HEAD/dev APIs gated by export checks, and allow only explicit narrow fallback to Seurat or ggplot2 when scop has no direct route."
-disable-model-invocation: true
+description: "Use only when the user explicitly invokes $use-scop for Seurat-based single-cell, spatial, bulk, or multi-omics analysis with the scop R package; prefer current exported scop:: routes and scop-native plots, verify installed exports for HEAD-sensitive APIs, and allow only explicit narrow fallback to Seurat or ggplot2 when scop has no direct route."
 ---
 
 # Use SCOP
@@ -20,10 +19,11 @@ Do not apply this skill implicitly to ordinary single-cell or omics requests tha
 - Use `RunDimsReduction()`, not stale `RunDimReduction()`.
 - Use `cores` for modern parallel interfaces when the SCOP documentation or function formals expose it; do not write stale `num_threads`.
 - Use `CCCStatPlot()`, `CCCHeatmap()`, and `CCCNetworkPlot()` for cell-cell communication plots; do not route to removed `CellChatPlot()`.
+- Prefer SCOP's public wrapper for an optional backend. Do not replace an available SCOP wrapper with a direct backend-package call.
 
 ## Source Order
 
-Use the official upstream package metadata as the public baseline. As of the checked upstream `DESCRIPTION`, SCOP is version `0.8.9` dated `2026-05-02`.
+Use the official upstream package metadata as the public baseline. The route map was synchronized to upstream `main` commit `32cb4855`; its `DESCRIPTION` reports SCOP version `0.8.9` dated `2026-06-28`.
 
 For execution-oriented tasks, verify the local runtime before assuming code will run:
 
@@ -33,12 +33,12 @@ For execution-oriented tasks, verify the local runtime before assuming code will
 4. Use official GitHub `DESCRIPTION`, `NAMESPACE`, and `NEWS.md` when the local package is absent, old, or ambiguous.
 5. Treat pkgdown pages as useful but potentially stale when they conflict with GitHub source.
 
-## Version Gates
+## Runtime Gates
 
-- Baseline route against SCOP `0.8.9`.
-- Use HEAD/dev APIs from `NEWS.md` `0.9.0` only after confirming the function is exported in the installed package or in checked upstream `NAMESPACE`.
-- Dev-gated APIs include `ConvertHomologs()`, `RunCytoSPACE()`, and `SpatialSpotPlot()`.
-- If the installed package is older than the required route, say which function is missing and either use an older SCOP route or ask the user to update SCOP.
+- Route against the checked upstream `main` snapshot recorded in `task_router.yaml`.
+- Before presenting runnable code, confirm every selected route is exported by the installed SCOP package when the installed source or version may differ from that snapshot.
+- Treat `NEWS.md` `0.9.0` entries as HEAD-sensitive while `DESCRIPTION` still reports `0.8.9`.
+- If the installed package lacks a selected route, name the missing function and either choose an exported older SCOP route or ask the user to update SCOP.
 
 ## Fallback Policy
 

@@ -1,7 +1,6 @@
 interface:
   display_name: "Use SCOP"
-  short_description: "SCOP-first Seurat analysis"
-  default_prompt: "Use $use-scop for SCOP-first Seurat analysis. Read task_router.yaml and prefer public scop:: routes."
+  short_description: "SCOP-first single-cell and spatial analysis"
+  default_prompt: "Use $use-scop for a SCOP-first omics workflow using current exported routes from task_router.yaml."
 policy:
-  # Keep this visible to Codex; SKILL.md still requires explicit $use-scop use.
-  allow_implicit_invocation: true
+  allow_implicit_invocation: false

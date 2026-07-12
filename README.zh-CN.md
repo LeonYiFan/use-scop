@@ -28,11 +28,11 @@ https://mengxu98.github.io/scop/
 
 当前公开基线来自官方 upstream GitHub 元数据，而不是本机已安装的旧包：
 
-- `DESCRIPTION`: `scop` `0.8.9`，日期为 `2026-05-02`
+- `DESCRIPTION`: `scop` `0.8.9`，日期为 `2026-06-28`
 - `NEWS.md`: 已经包含 `0.9.0` 开发版本说明
 - GitHub releases/tags: 当前没有发布打包 release 或 tag
 
-因为 `NEWS.md` 可能领先于包版本，`ConvertHomologs()`、`RunCytoSPACE()`、`SpatialSpotPlot()` 这类 HEAD/development API 需要加门控：生成可运行代码前，应该先确认本机已安装包或已检查的 upstream `NAMESPACE` 中确实导出了这些函数。
+当前路由表已同步到 upstream `main` 提交 `32cb4855`。因为 `NEWS.md` 可能领先于 `DESCRIPTION`，如果本机安装包的来源或版本与该快照不同，生成可运行代码前应确认所选函数确实已导出。测试套件现在默认将全部命名空间路由与 upstream `NAMESPACE` 对照。
 
 ## 如何使用
 

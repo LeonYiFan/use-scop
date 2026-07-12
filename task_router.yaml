@@ -1,8 +1,8 @@
-router_version: scop-0.8.9-plus-devgate-v1
+router_version: scop-main-32cb4855-v2
 policy: scop_first_narrow_fallback
 
 default_package: scop
-default_style: use scop:: calls in generated R code when practical
+default_style: "use scop:: calls in generated R code when practical"
 
 official_sources:
   description: https://raw.githubusercontent.com/mengxu98/scop/HEAD/DESCRIPTION
@@ -13,10 +13,12 @@ official_sources:
 baseline:
   source: official GitHub DESCRIPTION
   version: 0.8.9
-  date: "2026-05-02"
+  date: "2026-06-28"
+  main_commit: "32cb4855"
+  synchronized: "2026-07-11"
   notes:
     - GitHub releases and tags may be empty; do not infer release status from tags.
-    - NEWS.md may contain 0.9.0 development notes before DESCRIPTION advances.
+    - NEWS.md contains 0.9.0 development notes while DESCRIPTION still reports 0.8.9.
     - pkgdown pages can lag behind GitHub source.
 
 runtime_check:
@@ -44,17 +46,9 @@ stale_interfaces:
 
 fallback_rule: If a requested workflow step has no SCOP route, name the unsupported step, say SCOP does not appear to provide a direct route, then use Seurat or ggplot2 only for that specific step if needed. Never silently replace a SCOP-capable step.
 
-dev_gated_routes:
-  intent: Use these only after confirming they are exported locally or in checked upstream NAMESPACE.
-  requires_export_check: true
-  routes:
-    - task: homolog_conversion
-      use:
-        - scop::ConvertHomologs
-    - task: spatial_cell_assignment
-      use:
-        - scop::RunCytoSPACE
-        - scop::SpatialSpotPlot
+known_unexported:
+  - name: RunBulk
+    reason: Mentioned in NEWS.md but not exported by upstream main NAMESPACE at the synchronized commit; do not generate a namespaced RunBulk call until it is exported.
 
 domains:
   io_and_conversion:
@@ -67,6 +61,7 @@ domains:
       - task: seurat_to_anndata
         use:
           - scop::srt_to_adata
+          - scop::srt_to_h5ad
       - task: loom_velocity_input
         use:
           - scop::loom_to_srt
@@ -78,6 +73,18 @@ domains:
           - scop::CreateMetaFile
           - scop::FetchH5
           - scop::RunSCExplorer
+      - task: spatial_framework_conversion
+        use:
+          - scop::spe_to_srt
+          - scop::srt_to_spe
+          - scop::giotto_to_srt
+          - scop::srt_to_giotto
+          - scop::spata2_to_srt
+          - scop::srt_to_spata2
+          - scop::AddGiottoToSeurat
+      - task: example_datasets
+        use:
+          - scop::LoadScopDataset
 
   qc_and_preprocessing:
     intent: Run SCOP quality control, normalization, clustering, and reduction workflows.
@@ -93,6 +100,25 @@ domains:
           - scop::RunDimsReduction
           - scop::RunDimsEstimate
           - scop::DimsEstimatePlot
+      - task: dimension_reduction
+        use:
+          - scop::RunPCA
+          - scop::RunMDS
+          - scop::RunDM
+          - scop::RunFR
+          - scop::RunGLMPCA
+          - scop::RunHarmony2
+          - scop::RunLargeVis
+          - scop::RunNMF
+          - scop::RunPaCMAP
+          - scop::RunPHATE
+          - scop::RunTriMap
+          - scop::RunUMAP
+          - scop::RunUMAP2
+      - task: cluster_structure
+        use:
+          - scop::ClusterTreePlot
+          - scop::NMFHeatmap
       - task: cell_cycle
         use:
           - scop::CycGenePrefetch
@@ -100,7 +126,9 @@ domains:
       - task: atac_qc
         use:
           - scop::RunATACQC
-        requires_export_check: true
+      - task: spatial_qc
+        use:
+          - scop::RunSpotQC
 
   integration_mapping_annotation:
     intent: Integrate datasets, map cells, and annotate cell types through SCOP.
@@ -128,6 +156,7 @@ domains:
           - scop::GLUE_integrate
           - scop::MultiMAP_integrate
           - scop::WNN_integrate
+          - scop::Uncorrected_integrate
       - task: reference_mapping
         use:
           - scop::RunKNNMap
@@ -147,6 +176,9 @@ domains:
           - scop::TrainCellTypist
           - scop::RunScmap
           - scop::RunSciBet
+      - task: rare_cell_detection
+        use:
+          - scop::RunRareQ
 
   trajectory_velocity_fate:
     intent: Analyze trajectories, velocity, pseudotime, potency, and fate through SCOP.
@@ -162,6 +194,8 @@ domains:
           - scop::LineagePlot
           - scop::PAGAPlot
           - scop::PseudotimeProjectionPlot
+          - scop::PalantirTrajectoryPlot
+          - scop::BranchStreamPlot
       - task: velocity
         use:
           - scop::RunSCVELO
@@ -177,6 +211,10 @@ domains:
           - scop::RunDynamicEnrichment
           - scop::DynamicPlot
           - scop::DynamicHeatmap
+      - task: developmental_modeling
+        use:
+          - scop::RunFitDevo
+          - scop::FitDevoPlot
 
   differential_proportion_bulk:
     intent: Run differential expression, composition tests, pseudobulk, deconvolution, and bulk-like workflows.
@@ -197,9 +235,12 @@ domains:
           - scop::RunPropeller
           - scop::RunscCODA
           - scop::ProportionTestPlot
-      - task: bulk_and_deconvolution
+      - task: bulk_deconvolution
         use:
-          - scop::RunBulk
+          - scop::RunDeconvolution
+          - scop::DeconvolutionPlot
+          - scop::RunCIBERSORT
+          - scop::ImmuneAbundancePlot
           - scop::DEtestPlot
           - scop::RunEnrichment
           - scop::RunGSEA
@@ -228,19 +269,41 @@ domains:
       - task: regulatory_analysis
         use:
           - scop::RunDorothea
+          - scop::DorotheaPlot
           - scop::RunscTenifoldKnk
           - scop::scTenifoldKnkPlot
+          - scop::RunscTenifoldNet
+          - scop::scTenifoldNetPlot
+      - task: gene_regulatory_networks
+        use:
+          - scop::RunGRN
+          - scop::RunSCENIC
+          - scop::RunSCENICPlus
+          - scop::RunGRNBoost2
+          - scop::RunGENIE3
+          - scop::RunCisTarget
+          - scop::RunGNIPLR
+          - scop::RunMDIC3
+          - scop::SCENICPlot
 
   cell_cell_communication:
     intent: Run and visualize cell-cell communication through SCOP routes.
     routes:
       - task: communication_analysis
         use:
+          - scop::RunCCC
           - scop::RunCellChat
           - scop::RunCellphoneDB
           - scop::RunNichenetr
           - scop::RunMultiNichenetr
           - scop::RunLIANA
+      - task: signaling_activity
+        use:
+          - scop::RunSecAct
+          - scop::RunSecActCCC
+          - scop::RunSecActPatternGenes
+          - scop::RunSecActSignalingPattern
+          - scop::RunSecActVelocity
       - task: communication_conversion
         use:
           - scop::ccc_to_adata
@@ -257,14 +320,110 @@ domains:
       - task: spatial_domains
         use:
           - scop::RunBayesSpace
+          - scop::RunBANKSY
+          - scop::RunSmoothClust
       - task: coembedding
         use:
           - scop::RunCoEmbedding
-      - task: spatial_assignment_dev
-        requires_export_check: true
+      - task: spatial_cell_assignment
         use:
           - scop::RunCytoSPACE
           - scop::SpatialSpotPlot
+      - task: spatial_deconvolution
+        use:
+          - scop::RunCARD
+          - scop::RunRCTD
+          - scop::RunSpatialDWLS
+          - scop::RunSPOTlight
+          - scop::RunSTdeconvolve
+          - scop::STdeconvolvePlot
+      - task: spatial_integration_and_features
+        use:
+          - scop::RunSpatialIntegration
+          - scop::SpatialIntegrationPlot
+          - scop::RunSpatialVariableFeatures
+          - scop::SpatialVariableFeaturePlot
+          - scop::RunSpatialGradientFeatures
+          - scop::SpatialGradientPlot
+      - task: spatial_networks_and_neighborhoods
+        use:
+          - scop::RunSpatialNetwork
+          - scop::SpatialNetworkPlot
+          - scop::RunSpatialNeighborhood
+          - scop::SpatialNeighborhoodPlot
+          - scop::RunMERINGUE
+          - scop::RunMistyR
+          - scop::RunStatialKontextual
+      - task: spatial_quality_and_ecotypes
+        use:
+          - scop::RunSpatialQM
+          - scop::RunSpatialEcoTyper
+          - scop::SpatialEcoTyperCompositionPlot
+          - scop::SpatialEcoTyperSpatialPlot
+          - scop::RunSpotSweeper
+          - scop::RunSpaNorm
+      - task: spatial_malignancy
+        use:
+          - scop::RunscMalignantFinder
+          - scop::RunscMalignantRegion
+          - scop::RunscMalignantStates
+          - scop::SpatialCellPlot
+      - task: giotto_workflows
+        use:
+          - scop::RunGiottoWorkflow
+          - scop::RunGiottoCluster
+          - scop::RunGiottoSpatialGenes
+          - scop::RunGiottoSpatialModules
+          - scop::RunGiottoCellProximity
+          - scop::GiottoPlot
+      - task: semla_spatial_statistics
+        use:
+          - scop::RunSemlaLocalG
+          - scop::RunSemlaRadialDistance
+          - scop::RunSemlaRegionNeighbors
+          - scop::RunSemlaSpatialNetwork
+
+  tumor_cnv_and_phenotype:
+    intent: Analyze copy-number variation, tumor microenvironment, phenotype-associated cells, immune associations, and aging through SCOP.
+    routes:
+      - task: copy_number_variation
+        use:
+          - scop::RunCNV
+          - scop::CNVPlot
+      - task: tumor_microenvironment
+        use:
+          - scop::RunESTIMATE
+          - scop::EstimateScorePlot
+          - scop::EstimateGenePlot
+      - task: phenotype_association
+        use:
+          - scop::RunScissor
+          - scop::ScissorPlot
+      - task: immune_association
+        use:
+          - scop::GeneImmuneCorPlot
+      - task: aging_clock
+        use:
+          - scop::RuntAge
+          - scop::tAgePlot
+
+  metacells_perturbation_and_metabolic_flux:
+    intent: Build metacells, prioritize perturbation responses, and estimate metabolic flux through SCOP.
+    routes:
+      - task: metacells
+        use:
+          - scop::RunMetaCell
+          - scop::MetaCellPlot
+          - scop::RunmcRigor
+      - task: perturbation_priority
+        use:
+          - scop::RunAugur
+      - task: metabolic_flux
+        use:
+          - scop::RunscFEA
+          - scop::scFEAHeatmap
+          - scop::scFEAVolcanoPlot
+          - scop::scFEABalanceBarPlot
 
   feature_database_utilities:
     intent: Manage feature annotations, database preparation, and Python environments through SCOP.
@@ -277,8 +436,7 @@ domains:
           - scop::GetSimilarFeatures
           - scop::RenameFeatures
           - scop::GeneConvert
-      - task: homolog_conversion_dev
-        requires_export_check: true
+      - task: homolog_conversion
         use:
           - scop::ConvertHomologs
       - task: databases
@@ -315,6 +473,10 @@ domains:
           - scop::GroupHeatmap
           - scop::FeatureHeatmap
           - scop::DynamicHeatmap
+      - task: enrichment_and_composition_plots
+        use:
+          - scop::FerrisWheelPlot
+          - scop::ImmuneAbundancePlot
       - task: tracks_and_benchmarks
         use:
           - scop::CoverageTrackPlot
