@@ -28,11 +28,12 @@ The boundary is practical rather than absolute. SCOP is built around Seurat, so 
 
 The current public baseline is taken from official upstream GitHub metadata, not from any local installed package:
 
-- `DESCRIPTION`: `scop` `0.8.9`, dated `2026-06-28`
-- `NEWS.md`: already contains `0.9.0` development notes
-- GitHub releases/tags: no packaged releases or tags are currently published
+- `DESCRIPTION`: `scop` `0.9.1`, dated `2026-09-01`
+- Upstream `main` snapshot: `d6646dc31cfb1c6229558f15ed813caa1ff01200`, synchronized `2026-09-05`
 
-The route map is synchronized to upstream `main` commit `32cb4855`. Because `NEWS.md` can lead `DESCRIPTION`, generated runnable code should confirm selected exports in the installed package whenever its source or version differs from that snapshot. The test suite validates every namespaced route against upstream `NAMESPACE` by default.
+The route map removes APIs no longer exported in this snapshot and adds current workflow, integration benchmark, CellRank, and spatial communication/deconvolution routes. `RunStandardWorkflow()` and `RunIntegration()` are preferred for new code. Installed exports and signatures still need checking for HEAD-sensitive APIs; backend readiness and successful execution are separate evidence.
+
+The default test validates metadata and every routed export against this exact commit. Run `bash scripts/test-skill.sh --latest` separately to detect drift in upstream `main`; neither check proves a backend can run on a user's data.
 
 ## How To Use
 

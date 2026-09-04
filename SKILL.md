@@ -21,9 +21,12 @@ Do not apply this skill implicitly to ordinary single-cell or omics requests tha
 - Use `CCCStatPlot()`, `CCCHeatmap()`, and `CCCNetworkPlot()` for cell-cell communication plots; do not route to removed `CellChatPlot()`.
 - Prefer SCOP's public wrapper for an optional backend. Do not replace an available SCOP wrapper with a direct backend-package call.
 
+- Prefer `RunStandardWorkflow()` and `RunIntegration()` for new workflows. `standard_scop()` and `integration_scop()` are compatibility aliases; retain them only when the installed version requires them.
+- A task route lists alternatives and associated plots, not a mandatory sequence. Select the producer matching the requested method.
+
 ## Source Order
 
-Use the official upstream package metadata as the public baseline. The route map was synchronized to upstream `main` commit `32cb4855`; its `DESCRIPTION` reports SCOP version `0.8.9` dated `2026-06-28`.
+Use the official upstream package metadata as the public baseline. The route map was synchronized to upstream `main` commit `d6646dc31cfb1c6229558f15ed813caa1ff01200`; its `DESCRIPTION` reports SCOP version `0.9.1` dated `2026-09-01`.
 
 For execution-oriented tasks, verify the local runtime before assuming code will run:
 
@@ -37,8 +40,26 @@ For execution-oriented tasks, verify the local runtime before assuming code will
 
 - Route against the checked upstream `main` snapshot recorded in `task_router.yaml`.
 - Before presenting runnable code, confirm every selected route is exported by the installed SCOP package when the installed source or version may differ from that snapshot.
-- Treat `NEWS.md` `0.9.0` entries as HEAD-sensitive while `DESCRIPTION` still reports `0.8.9`.
+- Treat APIs added after the installed build as HEAD-sensitive; a matching version number alone does not prove matching exports or signatures.
 - If the installed package lacks a selected route, name the missing function and either choose an exported older SCOP route or ask the user to update SCOP.
+
+## Verify Inputs, Backends, and Results
+
+- Verify the actual object, assay/layer, identities, sample labels, and required matrices before analysis. Do not infer raw counts from an assay name or pass scaled values to a count-based method.
+- An exported R wrapper does not prove its R/Python backend is installed or its required data are present. Inspect wrapper help and the configured environment; distinguish export checks, adapter tests, and a real completed run.
+- Prefer the public SCOP wrapper and its dependency checks. When modifying SCOP optional-backend code, follow repository `AGENTS.md`: Remotes except `thisplot`/`thisutils` stay runtime optional, use `check_r(..., verbose = FALSE)` and `get_namespace_fun()`, and do not add dependency declarations or environment/global-option bypasses to silence checks. This is a development constraint, not a reason to inject private helpers into user analysis scripts.
+- Trace workflow calls through helpers when explaining what ran. Distinguish direct calls, helper-mediated execution, reads of stored results, and dimensions computed inside a backend.
+- Report failed, skipped, and partial stages explicitly. Do not substitute synthetic results or another method while retaining the requested method label.
+- For sample-level DE, verify biological replication and the selected method's count/aggregation requirements. Check `min.cells.sample` in installed `RunDEtest()` help; filtering changes the samples retained within each group. Cell-level tests are not biological-replicate evidence.
+
+## Spatial Analysis and Plotting
+
+- Read the selected producer's installed help for `image`, coordinates, assay, and reference requirements. Select an image explicitly for multi-image objects or iterate with an explicit per-image policy.
+- Use `SpatialCoordinates()` where a public coordinate accessor is needed. Distance-sensitive computation uses raw acquisition coordinates; display coordinates serve rendering. Keep cell/spot identifiers aligned and state distance units when known.
+- `RunStandardWorkflow(workflow = "spatial")` is a basic single-image Visium-style workflow. Its supported stages and methods must come from its actual formals/help, not the full spatial route list. Use `RunSpotQC()` for spot QC; do not automatically apply single-cell doublet rules to spots.
+- Plot the actual stored producer output with a compatible SCOP plot. Do not assume every spatial result uses the same payload or invent public registry/accessor APIs from internal implementation names.
+- For `CCCNetworkPlot(plot_type = "spatial")`, explain the selected-image scope and whether nodes/edges represent cells, spots, or group summaries. A rendered spatial network alone does not establish cross-slice communication or a physical transport path.
+- Label constructed demo edges separately from real coordinates and labels; they do not validate a communication backend. Preserve named group-to-color mappings when comparing plots.
 
 ## Fallback Policy
 

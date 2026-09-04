@@ -1,4 +1,4 @@
-router_version: scop-main-32cb4855-v2
+router_version: scop-main-d6646dc3-v3
 policy: scop_first_narrow_fallback
 
 default_package: scop
@@ -12,13 +12,13 @@ official_sources:
 
 baseline:
   source: official GitHub DESCRIPTION
-  version: 0.8.9
-  date: "2026-06-28"
-  main_commit: "32cb4855"
-  synchronized: "2026-07-11"
+  version: 0.9.1
+  date: "2026-09-01"
+  main_commit: "d6646dc31cfb1c6229558f15ed813caa1ff01200"
+  synchronized: "2026-09-05"
   notes:
     - GitHub releases and tags may be empty; do not infer release status from tags.
-    - NEWS.md contains 0.9.0 development notes while DESCRIPTION still reports 0.8.9.
+    - The snapshot describes source capabilities, not installed backend readiness.
     - pkgdown pages can lag behind GitHub source.
 
 runtime_check:
@@ -29,6 +29,29 @@ runtime_check:
     - before claiming generated code is runnable
     - before using version-sensitive arguments
     - before using routes marked requires_export_check
+
+compatibility_aliases:
+  standard_scop: RunStandardWorkflow
+  integration_scop: RunIntegration
+
+removed_from_routes:
+  - AddGiottoToSeurat
+  - BenchmarkPlot
+  - GiottoPlot
+  - LISIPlot
+  - LoadScopDataset
+  - RunGiottoCellProximity
+  - RunGiottoCluster
+  - RunGiottoSpatialGenes
+  - RunGiottoSpatialModules
+  - RunGiottoWorkflow
+  - RunSemlaLocalG
+  - RunSemlaRadialDistance
+  - RunSemlaRegionNeighbors
+  - RunSemlaSpatialNetwork
+  - RunSpatialQM
+  - spata2_to_srt
+  - srt_to_spata2
 
 stale_interfaces:
   avoid:
@@ -79,24 +102,30 @@ domains:
           - scop::srt_to_spe
           - scop::giotto_to_srt
           - scop::srt_to_giotto
-          - scop::spata2_to_srt
-          - scop::srt_to_spata2
-          - scop::AddGiottoToSeurat
-      - task: example_datasets
-        use:
-          - scop::LoadScopDataset
 
   qc_and_preprocessing:
     intent: Run SCOP quality control, normalization, clustering, and reduction workflows.
     routes:
       - task: qc_filtering
         use:
+          - scop::RunscDblFinder
+          - scop::Runscds
+          - scop::RunScrublet
+          - scop::RunDoubletDetection
           - scop::RunCellQC
           - scop::RunDoubletCalling
           - scop::RunDecontX
       - task: standard_workflow
         use:
-          - scop::standard_scop
+          - scop::RunStandardWorkflow
+      - task: preprocessing_steps
+        use:
+          - scop::NormalizeData
+          - scop::FindVariableFeatures
+          - scop::ScaleData
+          - scop::SCTransform
+          - scop::FindNeighbors
+          - scop::FindClusters
           - scop::RunDimsReduction
           - scop::RunDimsEstimate
           - scop::DimsEstimatePlot
@@ -133,9 +162,13 @@ domains:
   integration_mapping_annotation:
     intent: Integrate datasets, map cells, and annotate cell types through SCOP.
     routes:
+      - task: integration_benchmark
+        use:
+          - scop::RunIntegrationBenchmark
+          - scop::IntegrationBenchmarkPlot
       - task: integration
         use:
-          - scop::integration_scop
+          - scop::RunIntegration
           - scop::Seurat_integrate
           - scop::Harmony_integrate
           - scop::Harmony5_integrate
@@ -198,10 +231,14 @@ domains:
           - scop::BranchStreamPlot
       - task: velocity
         use:
+          - scop::RunCell2fate
           - scop::RunSCVELO
           - scop::VelocityPlot
       - task: fate_and_potency
         use:
+          - scop::RunCellRankTrends
+          - scop::RunCellRankEnrichment
+          - scop::CellRankPlot
           - scop::RunCellRank
           - scop::RunCytoTRACE
           - scop::CytoTRACEPlot
@@ -276,6 +313,7 @@ domains:
           - scop::scTenifoldNetPlot
       - task: gene_regulatory_networks
         use:
+          - scop::SCENICPlusPlot
           - scop::RunGRN
           - scop::RunSCENIC
           - scop::RunSCENICPlus
@@ -291,6 +329,9 @@ domains:
     routes:
       - task: communication_analysis
         use:
+          - scop::ListCCCDB
+          - scop::PrepareCCCDB
+          - scop::GetCCCObject
           - scop::RunCCC
           - scop::RunCellChat
           - scop::RunCellphoneDB
@@ -317,6 +358,28 @@ domains:
   spatial_and_coembedding:
     intent: Use SCOP spatial, coembedding, and native spatial visualization helpers.
     routes:
+      - task: spatial_coordinates
+        use:
+          - scop::SpatialCoordinates
+      - task: spatial_communication
+        use:
+          - scop::RunSpatialCellChat
+          - scop::SpatialCellChatPlot
+          - scop::RunSpaTalk
+          - scop::SpaTalkPlot
+          - scop::RunCOMMOT
+          - scop::COMMOTPlot
+          - scop::RunSpatialDM
+          - scop::GetSpatialDMResult
+          - scop::SpatialDMPlot
+          - scop::CCCNetworkPlot
+        notes:
+          - Choose the producer for the requested method; these routes are alternatives, not sequential stages.
+          - Read installed help for compatible stored results before choosing a shared CCC plot.
+      - task: spatial_benchmark
+        use:
+          - scop::RunSpatialBenchmark
+          - scop::SpatialBenchmarkPlot
       - task: spatial_domains
         use:
           - scop::RunBayesSpace
@@ -331,6 +394,9 @@ domains:
           - scop::SpatialSpotPlot
       - task: spatial_deconvolution
         use:
+          - scop::RunCell2location
+          - scop::Cell2locationPlot
+          - scop::SpatialDeconvolutionPlot
           - scop::RunCARD
           - scop::RunRCTD
           - scop::RunSpatialDWLS
@@ -347,6 +413,9 @@ domains:
           - scop::SpatialGradientPlot
       - task: spatial_networks_and_neighborhoods
         use:
+          - scop::GetSpatialGraph
+          - scop::MistyRPlot
+          - scop::StatialKontextualPlot
           - scop::RunSpatialNetwork
           - scop::SpatialNetworkPlot
           - scop::RunSpatialNeighborhood
@@ -356,7 +425,6 @@ domains:
           - scop::RunStatialKontextual
       - task: spatial_quality_and_ecotypes
         use:
-          - scop::RunSpatialQM
           - scop::RunSpatialEcoTyper
           - scop::SpatialEcoTyperCompositionPlot
           - scop::SpatialEcoTyperSpatialPlot
@@ -368,20 +436,6 @@ domains:
           - scop::RunscMalignantRegion
           - scop::RunscMalignantStates
           - scop::SpatialCellPlot
-      - task: giotto_workflows
-        use:
-          - scop::RunGiottoWorkflow
-          - scop::RunGiottoCluster
-          - scop::RunGiottoSpatialGenes
-          - scop::RunGiottoSpatialModules
-          - scop::RunGiottoCellProximity
-          - scop::GiottoPlot
-      - task: semla_spatial_statistics
-        use:
-          - scop::RunSemlaLocalG
-          - scop::RunSemlaRadialDistance
-          - scop::RunSemlaRegionNeighbors
-          - scop::RunSemlaSpatialNetwork
 
   tumor_cnv_and_phenotype:
     intent: Analyze copy-number variation, tumor microenvironment, phenotype-associated cells, immune associations, and aging through SCOP.
@@ -464,6 +518,7 @@ domains:
           - scop::CellDensityPlot
       - task: statistics_plots
         use:
+          - scop::CellScoringPlot
           - scop::CellStatPlot
           - scop::FeatureStatPlot
           - scop::FeatureCorPlot
@@ -477,8 +532,6 @@ domains:
         use:
           - scop::FerrisWheelPlot
           - scop::ImmuneAbundancePlot
-      - task: tracks_and_benchmarks
+      - task: coverage_tracks
         use:
           - scop::CoverageTrackPlot
-          - scop::BenchmarkPlot
-          - scop::LISIPlot

@@ -5,18 +5,22 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WITH_CODEX_CLI=0
 WITH_UPSTREAM=1
+WITH_LATEST=0
 
 for arg in "$@"; do
   case "$arg" in
     --with-codex-cli)
       WITH_CODEX_CLI=1
       ;;
+    --latest)
+      WITH_LATEST=1
+      ;;
     --offline)
       WITH_UPSTREAM=0
       ;;
     *)
       echo "Unknown argument: $arg" >&2
-      echo "Usage: $0 [--with-codex-cli] [--offline]" >&2
+      echo "Usage: $0 [--with-codex-cli] [--offline] [--latest]" >&2
       exit 2
       ;;
   esac
@@ -135,7 +139,8 @@ run_codex_case() {
   local full_prompt
 
   output_file="$(mktemp)"
-  full_prompt="$prompt"$'\n\n'"Please answer briefly. Do not inspect the repository and do not run commands; respond only from the active skill rules."
+  full_prompt="$prompt"$'\n\n'"Please answer briefly. Do not run commands; evaluate only the candidate skill and router included below."
+  full_prompt+=$'\n\nCandidate SKILL.md:\n'"$(cat SKILL.md)"$'\n\nCandidate task_router.yaml:\n'"$(cat task_router.yaml)"
   echo "Running Codex CLI regression: $name"
   if ! timeout 120s codex exec \
     --sandbox read-only \
@@ -167,6 +172,10 @@ run_codex_case() {
   pass "Codex CLI regression passed: $name"
 }
 
+if [[ "$WITH_LATEST" -eq 1 && "$WITH_UPSTREAM" -eq 0 ]]; then
+  fail "--latest and --offline cannot be combined"
+fi
+
 cd "$ROOT_DIR"
 
 [[ -f "SKILL.md" ]] || fail "SKILL.md not found"
@@ -188,8 +197,8 @@ require_ere '^name: use-scop$' SKILL.md
 require_ere '\$use-scop' SKILL.md README.md README.zh-CN.md agents/openai.yaml
 require_ere '/use-scop' SKILL.md README.md README.zh-CN.md
 require_ere 'task_router\.yaml' SKILL.md README.md README.zh-CN.md agents/openai.yaml
-require_ere 'version: 0\.8\.9' task_router.yaml
-require_ere '2026-06-28' README.md README.zh-CN.md task_router.yaml
+require_ere '^  version: [0-9]+\.[0-9]+\.[0-9]+' task_router.yaml
+require_ere '^  synchronized: ' task_router.yaml
 require_ere 'requires_export_check' SKILL.md task_router.yaml
 require_ere 'scop_first_narrow_fallback' task_router.yaml
 reject_ere 'disable-model-invocation' SKILL.md
@@ -225,7 +234,7 @@ pass "current SCOP routes are represented"
 require_ere 'scop::ConvertHomologs' task_router.yaml
 require_ere 'scop::RunCytoSPACE' task_router.yaml
 require_ere 'scop::SpatialSpotPlot' task_router.yaml
-require_ere 'main_commit: "32cb4855"' task_router.yaml
+require_ere 'main_commit: "[0-9a-f]{40}"' task_router.yaml
 require_ere 'HEAD-sensitive|HEAD-sensitive' SKILL.md README.md
 pass "upstream main snapshot and runtime gates are recorded"
 
@@ -246,17 +255,12 @@ pass "public README files cover installation targets and positioning"
 if [[ "$WITH_UPSTREAM" -eq 1 ]]; then
   require_cmd curl
 
-  DESCRIPTION_URL="https://raw.githubusercontent.com/mengxu98/scop/HEAD/DESCRIPTION"
-  NAMESPACE_URL="https://raw.githubusercontent.com/mengxu98/scop/HEAD/NAMESPACE"
-  DESCRIPTION_TEXT="$(curl -fsSL "$DESCRIPTION_URL")"
-  NAMESPACE_TEXT="$(curl -fsSL "$NAMESPACE_URL")"
+  upstream_args=()
+  if [[ "$WITH_LATEST" -eq 1 ]]; then
+    upstream_args+=(--latest)
+  fi
+  "$PYTHON_CMD" scripts/check-upstream.py "${upstream_args[@]}"
 
-  grep -Eq 'Version:[[:space:]]+0\.8\.9' <<<"$DESCRIPTION_TEXT" || fail "upstream DESCRIPTION is not 0.8.9"
-  grep -Eq 'Date:[[:space:]]+2026-06-28' <<<"$DESCRIPTION_TEXT" || fail "upstream DESCRIPTION date mismatch"
-  for export_name in $(grep -oE 'scop::[A-Za-z0-9_.]+' task_router.yaml | sed 's/scop:://' | sort -u); do
-    grep -Eq "export\\(${export_name}\\)" <<<"$NAMESPACE_TEXT" || fail "expected upstream export not found: $export_name"
-  done
-  pass "upstream metadata and all routed exports passed"
 fi
 
 if [[ "$WITH_CODEX_CLI" -eq 1 ]]; then

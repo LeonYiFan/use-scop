@@ -28,11 +28,12 @@ https://mengxu98.github.io/scop/
 
 当前公开基线来自官方 upstream GitHub 元数据，而不是本机已安装的旧包：
 
-- `DESCRIPTION`: `scop` `0.8.9`，日期为 `2026-06-28`
-- `NEWS.md`: 已经包含 `0.9.0` 开发版本说明
-- GitHub releases/tags: 当前没有发布打包 release 或 tag
+- `DESCRIPTION`: `scop` `0.9.1`，日期为 `2026-09-01`
+- upstream `main` 快照：`d6646dc31cfb1c6229558f15ed813caa1ff01200`，同步日期 `2026-09-05`
 
-当前路由表已同步到 upstream `main` 提交 `32cb4855`。因为 `NEWS.md` 可能领先于 `DESCRIPTION`，如果本机安装包的来源或版本与该快照不同，生成可运行代码前应确认所选函数确实已导出。测试套件现在默认将全部命名空间路由与 upstream `NAMESPACE` 对照。
+本版移除快照中不再导出的 API，补充标准流程、整合评估、CellRank，以及空间通讯和解卷积路由。新代码优先使用 `RunStandardWorkflow()` 和 `RunIntegration()`。执行前仍需核对本机导出函数及参数；函数存在、后端环境就绪、真实运行成功是不同层次的证据。
+
+默认测试按固定提交核对元数据和全部路由导出。可另运行 `bash scripts/test-skill.sh --latest` 检测 upstream `main` 漂移；这两种检查均不代表后端已能运行用户数据。
 
 ## 如何使用
 
